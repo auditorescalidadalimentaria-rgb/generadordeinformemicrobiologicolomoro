@@ -109,7 +109,7 @@ input[readonly]{background:var(--paper-warm);cursor:default;font-family:'DM Mono
     <div class="csv-row">
       <div class="form-group">
         <label>URL publica del Google Sheets (CSV)</label>
-        <input type="text" id="csvUrl" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vTs5IxOib2tecToDJUjlJW5nOnCSPv3R07-AGqILXgVhcSIMWsEFos6LlnVtItkKxuV_ppIvMhut_ye/pub?output=csv">
+        <input type="text" id="csvUrl" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vTs5IxOib2tecToDJUjlJW5nOnCSPv3R07-AGqILXgVhcSIMWsEFos6LlnVtItkKxuV_ppIvMhut_ye/pub?gid=663546123&single=true&output=csv">
       </div>
       <button class="btn btn-light" onclick="loadCSV()">Cargar datos</button>
     </div>
@@ -302,26 +302,37 @@ function parseDate(s){if(!s)return null;var m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\
 function fmtDate(s){var d=parseDate(s);if(!d||isNaN(d))return s||'';return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});}
 
 function normalizeRow(r){
+  // Match exacto por posicion de columna segun headers reales del Sheets
+  var vals=Object.values(r);
   var keys=Object.keys(r);
-  function get(){for(var i=0;i<arguments.length;i++){var p=arguments[i];var k=keys.find(function(k){return k.toLowerCase().indexOf(p.toLowerCase())!==-1;});if(k)return(r[k]||'').trim();}return '';}
+  // Busqueda flexible ignorando tildes, mayusculas y texto extra
+  function norm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\/]/g,' ').replace(/\s+/g,' ').trim();}
+  function get(){
+    for(var i=0;i<arguments.length;i++){
+      var p=norm(arguments[i]);
+      var k=keys.find(function(k){return norm(k).indexOf(p)!==-1;});
+      if(k) return (r[k]||'').trim();
+    }
+    return '';
+  }
   return{
-    marca:      get('marca temporal','marca'),
-    nro:        get('analisis n','analisis n\u00ba','an\u00e1lisis n'),
-    fmuestra:   get('fecha toma','toma de muestra'),
-    fanalisis:  get('fecha de an\u00e1lisis','fecha de analisis','fecha anal'),
-    producto:   get('producto/persona','producto','persona','superficie'),
-    coliformes: get('coliformes totales','coliformes'),
-    ecoli:      get('echerichia','escherichia','coli'),
-    aerobios:   get('aerobios'),
-    aureus:     get('staphylococcus','aureus'),
-    mohos:      get('mohos'),
-    levaduras:  get('levaduras'),
+    marca:           get('marca temporal'),
+    nro:             get('analisis n'),
+    fmuestra:        get('fecha toma de muestra'),
+    fanalisis:       get('fecha de analisis'),
+    producto:        get('producto persona superficie','producto/persona'),
+    coliformes:      get('coliformes totales'),
+    ecoli:           get('echerichia coli','escherichia coli'),
+    aerobios:        get('aerobios mesofilos'),
+    aureus:          get('staphylococcus aureus'),
+    mohos:           get('mohos'),
+    levaduras:       get('levaduras'),
     enterobacterias: get('enterobacterias'),
-    salmonella: get('salmonella'),
-    listeria:   get('listeria'),
-    evidencia:  get('evidencia'),
-    obs:        get('observaciones'),
-    analista:   get('analista'),
+    salmonella:      get('salmonella'),
+    listeria:        get('listeria monocytogenes','listeria'),
+    evidencia:       get('evidencia placas','evidencia'),
+    obs:             get('observaciones'),
+    analista:        get('analista'),
   };
 }
 
@@ -366,6 +377,7 @@ function applyFilters(){
     return true;
   });
   renderTable(filteredRows);
+  document.getElementById('previewCard').style.display='block';
 }
 
 function chipUFC(v,k){
