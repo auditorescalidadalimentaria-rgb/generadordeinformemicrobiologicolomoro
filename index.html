@@ -109,7 +109,7 @@ input[readonly]{background:var(--paper-warm);cursor:default;font-family:'DM Mono
     <div class="csv-row">
       <div class="form-group">
         <label>URL publica del Google Sheets (CSV)</label>
-        <input type="text" id="csvUrl" value="https://script.google.com/macros/s/AKfycbwI8KYuI2Ibx--UIuMs5TmFXA7NzlGo-GaNoNDWGV4MK4aqHme1wrgubg-lZ0tuDqlN/exec" data-csv="https://docs.google.com/spreadsheets/d/e/2PACX-1vTs5IxOib2tecToDJUjlJW5nOnCSPv3R07-AGqILXgVhcSIMWsEFos6LlnVtItkKxuV_ppIvMhut_ye/pub?gid=663546123&single=true&output=csv">
+        <input type="text" id="csvUrl" value="https://script.google.com/macros/s/AKfycbwVULfUgxqx-r_M5mOZrUh7FVICw4WtQy6x9tkgBaiuj_2DihXACAS_eKx295tce4we/exec" data-csv="https://docs.google.com/spreadsheets/d/e/2PACX-1vTs5IxOib2tecToDJUjlJW5nOnCSPv3R07-AGqILXgVhcSIMWsEFos6LlnVtItkKxuV_ppIvMhut_ye/pub?gid=663546123&single=true&output=csv">
       </div>
       <button class="btn btn-light" onclick="loadCSV()">Cargar datos</button>
     </div>
@@ -377,7 +377,7 @@ function loadCSV(){
   showStatus('Cargando datos...','info');
 
   // Usar Apps Script como fuente de datos (evita CORS)
-  fetch('https://script.google.com/macros/s/AKfycbwI8KYuI2Ibx--UIuMs5TmFXA7NzlGo-GaNoNDWGV4MK4aqHme1wrgubg-lZ0tuDqlN/exec')
+  fetch('https://script.google.com/macros/s/AKfycbwVULfUgxqx-r_M5mOZrUh7FVICw4WtQy6x9tkgBaiuj_2DihXACAS_eKx295tce4we/exec')
     .then(function(r){return r.json();})
     .then(function(data){
       if(!data||!data.length){showStatus('No se encontraron datos.','err');return;}
