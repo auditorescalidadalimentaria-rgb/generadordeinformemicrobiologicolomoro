@@ -109,7 +109,7 @@ input[readonly]{background:var(--paper-warm);cursor:default;font-family:'DM Mono
     <div class="csv-row">
       <div class="form-group">
         <label>URL publica del Google Sheets (CSV)</label>
-        <input type="text" id="csvUrl" value="https://script.google.com/macros/s/AKfycbwVULfUgxqx-r_M5mOZrUh7FVICw4WtQy6x9tkgBaiuj_2DihXACAS_eKx295tce4we/exec" data-csv="https://docs.google.com/spreadsheets/d/e/2PACX-1vTs5IxOib2tecToDJUjlJW5nOnCSPv3R07-AGqILXgVhcSIMWsEFos6LlnVtItkKxuV_ppIvMhut_ye/pub?gid=663546123&single=true&output=csv">
+        <input type="text" id="csvUrl" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vTs5IxOib2tecToDJUjlJW5nOnCSPv3R07-AGqILXgVhcSIMWsEFos6LlnVtItkKxuV_ppIvMhut_ye/pub?gid=663546123&single=true&output=csv" style="font-size:.75rem" data-apps="https://script.google.com/macros/s/AKfycbwVULfUgxqx-r_M5mOZrUh7FVICw4WtQy6x9tkgBaiuj_2DihXACAS_eKx295tce4we/exec" data-csv="https://docs.google.com/spreadsheets/d/e/2PACX-1vTs5IxOib2tecToDJUjlJW5nOnCSPv3R07-AGqILXgVhcSIMWsEFos6LlnVtItkKxuV_ppIvMhut_ye/pub?gid=663546123&single=true&output=csv">
       </div>
       <button class="btn btn-light" onclick="loadCSV()">Cargar datos</button>
     </div>
@@ -372,22 +372,40 @@ function normalizeRow(r){
 }
 
 function loadCSV(){
-  var url=document.getElementById('csvUrl').value.trim();
-  if(!url){showStatus('Ingresa la URL.','err');return;}
   showStatus('Cargando datos...','info');
+  var csvUrl='https://docs.google.com/spreadsheets/d/e/2PACX-1vTs5IxOib2tecToDJUjlJW5nOnCSPv3R07-AGqILXgVhcSIMWsEFos6LlnVtItkKxuV_ppIvMhut_ye/pub?gid=663546123&single=true&output=csv';
+  var proxies=[
+    'https://corsproxy.io/?'+encodeURIComponent(csvUrl),
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(csvUrl),
+    'https://thingproxy.freeboard.io/fetch/'+csvUrl,
+    'https://cors.sh/?'+csvUrl,
+  ];
 
-  // Usar Apps Script como fuente de datos (evita CORS)
-  fetch('https://script.google.com/macros/s/AKfycbwVULfUgxqx-r_M5mOZrUh7FVICw4WtQy6x9tkgBaiuj_2DihXACAS_eKx295tce4we/exec')
-    .then(function(r){return r.json();})
-    .then(function(data){
-      if(!data||!data.length){showStatus('No se encontraron datos.','err');return;}
-      allRows=data.map(function(r){return normalizeRowJSON(r);});
-      filteredRows=allRows.slice();
-      populateFilters();renderTable(filteredRows);
-      showStatus('Cargados '+allRows.length+' registros correctamente.','ok');
-      document.getElementById('previewCard').style.display='block';
-    })
-    .catch(function(e){showStatus('Error al cargar datos: '+e.message,'err');});
+  function tryProxy(idx){
+    if(idx>=proxies.length){
+      showStatus('No se pudo cargar. Intenta recargar la pagina.','err');
+      return;
+    }
+    fetch(proxies[idx])
+      .then(function(r){
+        if(!r.ok) throw new Error('status '+r.status);
+        return r.text();
+      })
+      .then(function(txt){
+        if(!txt||txt.trim().length<10) throw new Error('empty');
+        var res=Papa.parse(txt,{header:true,skipEmptyLines:true});
+        if(!res.data||!res.data.length) throw new Error('no data');
+        allRows=res.data.map(normalizeRow);
+        filteredRows=allRows.slice();
+        populateFilters();renderTable(filteredRows);
+        showStatus('Cargados '+allRows.length+' registros correctamente.','ok');
+        document.getElementById('previewCard').style.display='block';
+      })
+      .catch(function(){
+        tryProxy(idx+1);
+      });
+  }
+  tryProxy(0);
 }
 
 function showStatus(msg,type){var el=document.getElementById('statusMsg');el.textContent=msg;el.className='status '+(type==='ok'?'s-ok':type==='err'?'s-err':'s-info');el.style.display='block';}
