@@ -337,37 +337,34 @@ function normalizeRowJSON(r){
 }
 
 function normalizeRow(r){
-  // Match exacto por posicion de columna segun headers reales del Sheets
-  var vals=Object.values(r);
-  var keys=Object.keys(r);
-  // Busqueda flexible ignorando tildes, mayusculas y texto extra
-  function norm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\/]/g,' ').replace(/\s+/g,' ').trim();}
-  function get(){
-    for(var i=0;i<arguments.length;i++){
-      var p=norm(arguments[i]);
-      var k=keys.find(function(k){return norm(k).indexOf(p)!==-1;});
-      if(k) return (r[k]||'').trim();
-    }
-    return '';
-  }
+  // Mapeo por posicion — headers del Sheets Lomoro:
+  // 0:Marca temporal, 1:Analisis Nº, 2:Fecha Toma de Muestra,
+  // 3:Fecha de Analisis, 4:Producto/Persona/Superficie,
+  // 5:Coliformes Totales, 6:Echerichia Coli, 7:Aerobios Mesofilos,
+  // 8:Staphylococcus Aureus, 9:Mohos, 10:Levaduras,
+  // 11:Enterobacterias, 12:Parametro CAA (col extra),
+  // 13:Salmonella, 14:Listeria, 15:Evidencia Placas,
+  // 16:Observaciones, 17:Analista
+  var v=Object.values(r);
+  function val(i){return (v[i]!==undefined&&v[i]!==null)?String(v[i]).trim():'';}
   return{
-    marca:           get('marca temporal'),
-    nro:             get('analisis n'),
-    fmuestra:        get('fecha toma de muestra'),
-    fanalisis:       get('fecha de analisis'),
-    producto:        get('producto persona superficie','producto/persona'),
-    coliformes:      get('coliformes totales'),
-    ecoli:           get('echerichia coli','escherichia coli'),
-    aerobios:        get('aerobios mesofilos'),
-    aureus:          get('staphylococcus aureus'),
-    mohos:           get('mohos'),
-    levaduras:       get('levaduras'),
-    enterobacterias: get('enterobacterias'),
-    salmonella:      get('salmonella'),
-    listeria:        get('listeria monocytogenes','listeria'),
-    evidencia:       get('evidencia placas','evidencia'),
-    obs:             get('observaciones'),
-    analista:        get('analista'),
+    marca:           val(0),
+    nro:             val(1),
+    fmuestra:        val(2),
+    fanalisis:       val(3),
+    producto:        val(4),
+    coliformes:      val(5),
+    ecoli:           val(6),
+    aerobios:        val(7),
+    aureus:          val(8),
+    mohos:           val(9),
+    levaduras:       val(10),
+    enterobacterias: val(11),
+    salmonella:      val(13),
+    listeria:        val(14),
+    evidencia:       val(15),
+    obs:             val(16),
+    analista:        val(17),
   };
 }
 
