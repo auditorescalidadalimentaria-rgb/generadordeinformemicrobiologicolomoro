@@ -340,16 +340,50 @@ function loadCSV(){
   var url=document.getElementById('csvUrl').value.trim();
   if(!url){showStatus('Ingresa la URL del CSV.','err');return;}
   showStatus('Cargando datos...','info');
+
+  function parseAndRender(csvText){
+    var res=Papa.parse(csvText,{header:true,skipEmptyLines:true});
+    if(!res.data.length){showStatus('No se encontraron datos.','err');return;}
+    allRows=res.data.map(normalizeRow);
+    filteredRows=allRows.slice();
+    populateFilters();renderTable(filteredRows);
+    showStatus('Cargados '+allRows.length+' registros correctamente.','ok');
+    document.getElementById('previewCard').style.display='block';
+  }
+
+  // Intento 1: directo con PapaParse
   Papa.parse(url,{download:true,header:true,skipEmptyLines:true,
     complete:function(res){
-      if(!res.data.length){showStatus('No se encontraron datos.','err');return;}
-      allRows=res.data.map(normalizeRow);
-      filteredRows=allRows.slice();
-      populateFilters();renderTable(filteredRows);
-      showStatus('Cargados '+allRows.length+' registros correctamente.','ok');
-      document.getElementById('previewCard').style.display='block';
+      if(res.data&&res.data.length>0){
+        allRows=res.data.map(normalizeRow);
+        filteredRows=allRows.slice();
+        populateFilters();renderTable(filteredRows);
+        showStatus('Cargados '+allRows.length+' registros correctamente.','ok');
+        document.getElementById('previewCard').style.display='block';
+      } else {
+        // Intento 2: proxy CORS
+        showStatus('Intentando con proxy...','info');
+        var proxyUrl='https://corsproxy.io/?'+encodeURIComponent(url);
+        fetch(proxyUrl)
+          .then(function(r){return r.text();})
+          .then(function(txt){parseAndRender(txt);})
+          .catch(function(){
+            // Intento 3: proxy alternativo
+            var proxy2='https://api.allorigins.win/raw?url='+encodeURIComponent(url);
+            fetch(proxy2)
+              .then(function(r){return r.text();})
+              .then(function(txt){parseAndRender(txt);})
+              .catch(function(e){showStatus('Error al cargar datos. Verifica que el Sheets este publicado como CSV.','err');});
+          });
+      }
     },
-    error:function(err){showStatus('Error: '+err.message,'err');}
+    error:function(){
+      var proxyUrl='https://corsproxy.io/?'+encodeURIComponent(url);
+      fetch(proxyUrl)
+        .then(function(r){return r.text();})
+        .then(function(txt){parseAndRender(txt);})
+        .catch(function(e){showStatus('Error: '+e.message,'err');});
+    }
   });
 }
 
